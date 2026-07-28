@@ -1,0 +1,36 @@
+{
+  "policyVersion": "1.0",
+  "id": "team-safety-v2-candidate",
+  "name": "Team safety candidate",
+  "defaultDecision": "allow",
+  "rules": [
+    {
+      "id": "deny-production-destruction",
+      "description": "Destructive actions in production require review.",
+      "priority": 190,
+      "effect": "review",
+      "when": {
+        "environments": ["production"],
+        "effectsAny": ["destructive"],
+        "reversible": false
+      },
+      "require": {
+        "count": 1,
+        "roles": ["service-owner"]
+      }
+    },
+    {
+      "id": "review-external-write",
+      "description": "External writes need a responsible owner.",
+      "priority": 100,
+      "effect": "review",
+      "when": {
+        "effectsAll": ["external", "write"]
+      },
+      "require": {
+        "count": 1,
+        "roles": ["communications-owner", "service-owner"]
+      }
+    }
+  ]
+}

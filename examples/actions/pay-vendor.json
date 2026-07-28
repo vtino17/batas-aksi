@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "id": "act-pay-004",
+  "agent": {
+    "id": "finance-agent",
+    "name": "Invoice assistant",
+    "sessionId": "demo-04"
+  },
+  "intent": "Pay an approved cloud infrastructure invoice",
+  "tool": {
+    "namespace": "banking",
+    "name": "transfer",
+    "operation": "create_payment"
+  },
+  "target": {
+    "kind": "bank-account",
+    "locator": "vendor/cloud-provider",
+    "environment": "production"
+  },
+  "effects": ["write", "external", "financial"],
+  "dataClasses": ["financial"],
+  "reversible": false,
+  "estimatedCost": {
+    "amount": 12500000,
+    "currency": "IDR"
+  },
+  "requestedAt": "2026-07-28T02:15:00.000Z"
+}

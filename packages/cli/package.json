@@ -1,0 +1,20 @@
+{
+  "name": "@batasaksi/cli",
+  "version": "0.1.0",
+  "description": "Command-line preflight checks for AI agent actions.",
+  "type": "module",
+  "bin": {
+    "batasaksi": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "node --enable-source-maps --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@batasaksi/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3"
+  }
+}

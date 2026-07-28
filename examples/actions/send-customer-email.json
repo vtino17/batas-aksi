@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "id": "act-email-002",
+  "agent": {
+    "id": "support-agent",
+    "name": "Support copilot",
+    "sessionId": "demo-02"
+  },
+  "intent": "Send an incident update to affected customers",
+  "tool": {
+    "namespace": "google",
+    "name": "gmail",
+    "operation": "send_email"
+  },
+  "target": {
+    "kind": "email",
+    "locator": "customers@external.example",
+    "environment": "production"
+  },
+  "effects": ["write", "external"],
+  "dataClasses": ["personal"],
+  "reversible": false,
+  "requestedAt": "2026-07-28T02:05:00.000Z"
+}

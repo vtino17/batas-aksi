@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "id": "act-delete-003",
+  "agent": {
+    "id": "ops-agent",
+    "name": "Database caretaker",
+    "sessionId": "demo-03"
+  },
+  "intent": "Delete customer records considered stale",
+  "tool": {
+    "namespace": "database",
+    "name": "postgres",
+    "operation": "delete_rows"
+  },
+  "target": {
+    "kind": "database",
+    "locator": "prod/customers",
+    "environment": "production"
+  },
+  "effects": ["write", "destructive"],
+  "dataClasses": ["personal"],
+  "reversible": false,
+  "requestedAt": "2026-07-28T02:10:00.000Z"
+}

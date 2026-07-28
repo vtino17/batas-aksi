@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "id": "act-read-001",
+  "agent": {
+    "id": "research-agent",
+    "name": "Research assistant",
+    "sessionId": "demo-01"
+  },
+  "intent": "Read and summarize a local project brief",
+  "tool": {
+    "namespace": "filesystem",
+    "name": "documents",
+    "operation": "read_file"
+  },
+  "target": {
+    "kind": "file",
+    "locator": "brief/project.md",
+    "environment": "local"
+  },
+  "effects": ["read"],
+  "dataClasses": ["internal"],
+  "reversible": true,
+  "requestedAt": "2026-07-28T02:00:00.000Z"
+}
