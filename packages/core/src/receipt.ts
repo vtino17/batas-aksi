@@ -5,10 +5,42 @@ import type {
   ActionPolicy,
   ActionReceipt,
   Approval,
+  EvaluationResult,
   ReceiptVerification,
 } from "./types.js";
 
 type ReceiptPayload = Omit<ActionReceipt, "receiptHash">;
+
+function approvalsAreValid(
+  approvals: Approval[],
+  evaluation: EvaluationResult | undefined,
+  evaluatedAt: number,
+  receiptDecision: ActionReceipt["decision"],
+): boolean {
+  if (!Number.isFinite(evaluatedAt)) return false;
+  const timestampsValid = approvals.every((approval) => {
+    if (
+      typeof approval.approver !== "string" || !approval.approver.trim() ||
+      typeof approval.role !== "string" || !approval.role.trim() ||
+      typeof approval.approvedAt !== "string"
+    ) return false;
+    const approvedAt = Date.parse(approval.approvedAt);
+    const age = evaluatedAt - approvedAt;
+    return Number.isFinite(approvedAt) && age >= 0 && (
+      evaluation?.approval.expiresInMinutes == null ||
+      age <= evaluation.approval.expiresInMinutes * 60_000
+    );
+  });
+  if (!timestampsValid) return false;
+  const distinctApprovers = new Set(approvals.map((approval) => approval.approver));
+  if (!evaluation) return receiptDecision !== "review" || distinctApprovers.size > 0;
+  return evaluation.decision !== "review" || (
+    distinctApprovers.size >= evaluation.approval.required &&
+    approvals.every((approval) =>
+      evaluation.approval.roles.length === 0 ||
+      evaluation.approval.roles.includes(approval.role))
+  );
+}
 
 export async function createReceipt(input: {
   action: ActionEnvelope;
@@ -35,16 +67,24 @@ export async function createReceipt(input: {
   ) {
     throw new Error(`Approver role must be one of: ${evaluation.approval.roles.join(", ")}.`);
   }
+  if (approvals.some((approval) =>
+    typeof approval.approver !== "string" || !approval.approver.trim() ||
+    typeof approval.role !== "string" || !approval.role.trim())) {
+    throw new Error("Approval requires a non-empty approver and role.");
+  }
+  if (approvals.some((approval) => {
+    if (typeof approval.approvedAt !== "string") return true;
+    const approvedAt = Date.parse(approval.approvedAt);
+    return !Number.isFinite(approvedAt) || approvedAt > now.getTime();
+  })) {
+    throw new Error("Approval timestamp must be valid and not in the future.");
+  }
   if (
     evaluation.approval.expiresInMinutes !== null &&
     approvals.some((approval) => {
       const approvedAt = Date.parse(approval.approvedAt);
       const age = now.getTime() - approvedAt;
-      return (
-        Number.isNaN(approvedAt) ||
-        age < 0 ||
-        age > evaluation.approval.expiresInMinutes! * 60_000
-      );
+      return age > evaluation.approval.expiresInMinutes! * 60_000;
     })
   ) {
     throw new Error(
@@ -85,16 +125,12 @@ export async function verifyReceipt(input: {
     input.action && input.policy
       ? evaluateAction(input.action, input.policy, new Date(receipt.evaluatedAt))
       : undefined;
-  const distinctApprovers = new Set(receipt.approvals.map((approval) => approval.approver));
-  const approvalValid = evaluation
-    ? evaluation.decision !== "review" ||
-      (distinctApprovers.size >= evaluation.approval.required &&
-        receipt.approvals.every(
-          (approval) =>
-            evaluation.approval.roles.length === 0 ||
-            evaluation.approval.roles.includes(approval.role),
-        ))
-    : receipt.decision !== "review" || distinctApprovers.size > 0;
+  const approvalValid = approvalsAreValid(
+    receipt.approvals,
+    evaluation,
+    Date.parse(receipt.evaluatedAt),
+    receipt.decision,
+  );
   const checks: ReceiptVerification["checks"] = {
     receiptHash: (await sha256(payload)) === receiptHash,
     actionHash: input.action ? (await sha256(input.action)) === receipt.actionHash : null,
