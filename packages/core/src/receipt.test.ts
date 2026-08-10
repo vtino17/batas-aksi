@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createReceipt, verifyReceipt } from "./receipt.js";
+import { sha256 } from "./canonical.js";
 import type { ActionEnvelope, ActionPolicy } from "./types.js";
 
 const action: ActionEnvelope = {
@@ -78,5 +79,26 @@ describe("receipts", () => {
 
   it("refuses under-approved review decisions", async () => {
     await expect(createReceipt({ action, policy })).rejects.toThrow("requires 1 distinct approval");
+  });
+
+  it("rejects a rehashed receipt containing an expired approval", async () => {
+    const receipt = await createReceipt({
+      action,
+      policy,
+      approvals: [{
+        approver: "Ayu",
+        role: "communications-owner",
+        approvedAt: "2026-07-28T02:01:00.000Z",
+      }],
+      now: new Date("2026-07-28T02:02:00.000Z"),
+    });
+    receipt.approvals[0]!.approvedAt = "2026-07-28T01:00:00.000Z";
+    const payload = { ...receipt, receiptHash: undefined };
+    receipt.receiptHash = await sha256(payload);
+
+    const verification = await verifyReceipt({ receipt, action, policy });
+    expect(verification.checks.receiptHash).toBe(true);
+    expect(verification.checks.approvals).toBe(false);
+    expect(verification.valid).toBe(false);
   });
 });
